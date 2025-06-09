@@ -6,6 +6,8 @@ import plotly.express as px
 import re
 import plotly.graph_objs as go
 from dash.dash_table.Format import Format, Scheme
+import io
+import base64
 
 
 def load_data(filepath):
@@ -237,6 +239,12 @@ app.layout = html.Div([
     
     dcc.Graph(id='b-heatmap'),
     
+    html.Div([
+    html.Button("Hide data below 30 RPM in heatmap", id='hide-below-30rpm', n_clicks=0, style={'margin-right': '10px'}),
+    html.Button("Restore sliding data", id='show-all-rpm', n_clicks=0)
+    ], style={'margin-bottom': '20px', 'margin-top': '10px'}),
+
+    
     dcc.Dropdown(
         id='column-dropdown',
         options=[{'label': col, 'value': col} for col in numeric_columns],
@@ -282,6 +290,8 @@ app.layout = html.Div([
         sort_mode="multi",
         style_header={'fontWeight': 'bold'}
     ),
+
+dcc.Store(id='rpm-filtered', data=False),
 
 
 html.Div([
@@ -367,20 +377,27 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
     data = df_filtered[visible_cols].to_dict('records')
     return cols, data
 
+
 @app.callback(
     Output('b-heatmap', 'figure'),
     Input('start-record', 'value'),
     Input('end-record', 'value'),
     Input('manual-min', 'value'),
-    Input('manual-max', 'value')
+    Input('manual-max', 'value'),
+    Input('rpm-filtered', 'data')
 )
-def update_heatmap(start_rec, end_rec, manual_min, manual_max):
+
+def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
+    dff = df.copy()
+    if rpm_filtered and 'RPM' in dff.columns:
+        dff = dff[dff['RPM'] >= 30]
+        
     if start_rec is None or end_rec is None or start_rec > end_rec:
         return go.Figure()
-    start_idx = max(int(df.index.min()), int(start_rec))
-    end_idx = min(int(df.index.max()), int(end_rec))
-    df_slice = df.iloc[start_idx:end_idx+1]
+    df_slice = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)]
+
+    
     z_data = df_slice[b_cols].values
     y_labels = df_slice['TimeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S') if 'TimeStamp' in df_slice.columns else df_slice.index.astype(str)
     x_labels = b_cols
@@ -459,7 +476,7 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max):
         fig.data[0].opacity = 1.0
     
     fig.update_layout(
-        title=f"24-Bin Data Heatmap (Records {start_idx} to {end_idx})",
+        title=f"24-Bin Data Heatmap (Records {start_rec} to {end_rec})",
         xaxis_title="Bins 1-24",
         yaxis_title="Record Number and TimeStamp",
         yaxis_autorange='reversed',
@@ -467,11 +484,6 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max):
     )
     return fig
 
-
-
-
-import io
-import base64
 
 @app.callback(
     Output('upload-status', 'children'),
@@ -492,6 +504,24 @@ def update_data_source(contents, filename):
         return f"Data source '{filename}' loaded successfully! Please adjust display controls if needed."
     except Exception as e:
         return f"Error loading file '{filename}': {e}"
+
+
+@app.callback(
+    Output('rpm-filtered', 'data'),
+    [Input('hide-below-30rpm', 'n_clicks'),
+     Input('show-all-rpm', 'n_clicks')],
+    prevent_initial_call=True
+)
+def set_rpm_filter(hide_clicks, show_clicks):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return False
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if button_id == 'hide-below-30rpm':
+        return True
+    elif button_id == 'show-all-rpm':
+        return False
+    return False
 
 
 
