@@ -66,7 +66,7 @@ for col in display_columns:
 visible_columns = [col for col in display_columns if col not in hidden_columns]
 checklist_options = [{'label': col, 'value': col} for col in display_columns]
 
-# Define numeric_columns AFTER creating excluded_cols
+# Define numeric_columns after creating excluded_cols
 numeric_columns = [col for col in df.select_dtypes(include='number').columns if col not in excluded_cols]
 
 df['B1'] = (
@@ -281,7 +281,22 @@ app.layout = html.Div([
         sort_action="native",
         sort_mode="multi",
         style_header={'fontWeight': 'bold'}
-    )
+    ),
+
+
+html.Div([
+    html.Hr(),
+    dcc.Upload(
+        id='upload-data',
+        children=html.Button('Select Different Data Source Text File'),
+        accept='.txt,.csv,.tsv,.dat,text/plain',
+        multiple=False,
+        style={'margin-top': '40px'}
+    ),
+    html.Div(id='upload-status', style={'margin-top': '10px', 'color': '#00528C'})
+])
+
+
 ])
 
 @app.callback(
@@ -440,7 +455,7 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max):
             ),
             legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1.0)
         )
-        # Set heatmap opacity (to avoid full occlusion)
+        # Set heatmap opacity
         fig.data[0].opacity = 1.0
     
     fig.update_layout(
@@ -451,6 +466,34 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max):
         margin=dict(l=60, r=40, t=40, b=60)
     )
     return fig
+
+
+
+
+import io
+import base64
+
+@app.callback(
+    Output('upload-status', 'children'),
+    Input('upload-data', 'contents'),
+    State('upload-data', 'filename')
+)
+def update_data_source(contents, filename):
+    if contents is None:
+        return ""
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    try:
+        # Try loading as a text file (CSV/TSV or whitespace delimited)
+        # You can refine parsing based on your file style
+        df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', sep=None, engine='python')
+        global df
+        df = df_new
+        return f"Data source '{filename}' loaded successfully! Please adjust display controls if needed."
+    except Exception as e:
+        return f"Error loading file '{filename}': {e}"
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
