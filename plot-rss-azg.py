@@ -431,14 +431,14 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max):
         # Add a second x-axis for RPM, at the top, fixed 0–1600.
         fig.update_layout(
             xaxis2=dict(
-                title="RPM",
+                title="",
                 overlaying='x',
                 side='top',
                 range=[0, 1600],
                 showgrid=True,
                 zeroline=False,
             ),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1.0)
         )
         # Set heatmap opacity (to avoid full occlusion)
         fig.data[0].opacity = 1.0
