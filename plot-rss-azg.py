@@ -206,7 +206,7 @@ app.layout = html.Div([
     
     html.H3("Select range of records to display:"),
     html.Div([
-        html.Label("Start Record Number:"),
+        html.Label("Start Record Number (minimum is 1):"),
         dcc.Input(
             id='start-record',
             type='number',
@@ -251,10 +251,24 @@ app.layout = html.Div([
     dcc.Graph(id='b-heatmap-shifted'),
 
     
+    
+    
     html.Div([
     html.Button("Hide data below 30 RPM in heatmap", id='hide-below-30rpm', n_clicks=0, style={'margin-right': '10px'}),
     html.Button("Restore sliding data", id='show-all-rpm', n_clicks=0)
     ], style={'margin-bottom': '20px', 'margin-top': '10px'}),
+
+    html.Div([
+        html.H4("Test facility plot generation, for field logs only, NOT for final logs. No guarantee of accuracy.", style={'margin-bottom': '12px'}),
+        html.Div([
+            html.Label("Start Depth:"),
+            dcc.Input(id='start-depth', type='number', value=0, style={'margin-right': '16px', 'width': '100px'}),
+            html.Label("End Depth:"),
+            dcc.Input(id='end-depth', type='number', value=100, style={'margin-right': '16px', 'width': '100px'}),
+            html.Button("Apply", id='apply-depth', n_clicks=0, style={'margin-left': '12px'}),
+        ], style={'margin-bottom': '8px'}),
+        html.Div(id='depth-apply-status', style={'color': '#00528C'})
+    ], style={'border': '2px solid #C4C4C4', 'border-radius': '12px', 'padding': '16px', 'margin': '30px 0'}),
 
     
     dcc.Dropdown(
@@ -633,6 +647,36 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
     )
 
     return fig
+
+
+@app.callback(
+    Output('depth-apply-status', 'children'),
+    Input('apply-depth', 'n_clicks'),
+    State('start-depth', 'value'),
+    State('end-depth', 'value'),
+    State('start-record', 'value'),
+    State('end-record', 'value'),
+    State('rpm-filtered', 'data')
+)
+def apply_depths(n_clicks, start_depth, end_depth, start_rec, end_rec, rpm_filtered):
+    if n_clicks == 0 or start_depth is None or end_depth is None:
+        return ""
+    global df
+    # Filter as the current heatmap does
+    dff = df.copy()
+    if rpm_filtered and 'RPM' in dff.columns:
+        dff = dff[dff['RPM'] >= 30]
+    if start_rec is None or end_rec is None or start_rec > end_rec:
+        return "Invalid record range."
+    df_slice = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)]
+    n = len(df_slice)
+    if n < 2:
+        return "Need at least two records to interpolate depth."
+    # Generate interpolated depth column
+    depth_values = np.linspace(start_depth, end_depth, n)
+    # Write to the relevant records in the original df
+    df.loc[df_slice.index, 'Depth'] = depth_values
+    return f"Depth column applied to {n} records (from {start_depth} to {end_depth} feet)."
 
 
 
