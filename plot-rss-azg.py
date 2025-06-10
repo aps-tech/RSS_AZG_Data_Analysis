@@ -210,20 +210,6 @@ df['B24'] = (
 )
 
 
-
-for i in range(1, 25):
-    b_col = f'B{i}'
-    if b_col in df.columns:
-        df[b_col] = df[b_col] * 1000 * 3 / 3
-        
-#times 1000 to go from counts per millisecond to counts per second
-# times three since each detector is only receiving counts from one third of the cylinder
-# dividing by three for the averaging of counts mentioned above
-# keeping for clarity
-
-
-
-
 # ---------------------------------------------------------
 # --------- DASH LAYOUT SECTION (UI elements) -------------
 # ---------------------------------------------------------
@@ -268,10 +254,24 @@ app.layout = html.Div([
         html.Label("Min color scale:"),
         dcc.Input(id='manual-min', type='number', value=0, debounce=True, step=0.01, style={'width': '120px'}),
         html.Label("Max color scale:"),
-        dcc.Input(id='manual-max', type='number', value=200, debounce=True, step=0.01, style={'width': '120px'}),
+        dcc.Input(id='manual-max', type='number', value=300, debounce=True, step=0.01, style={'width': '120px'}),
         html.Button("Set gamma scale to 0-200", id='set-b-scale', n_clicks=0, style={'margin-left': '20px', 'margin-right': '10px'}),
         html.Button("Auto Color Range (auto-updates with record range change)", id='reset-b-scale', n_clicks=0)
     ], style={'margin-bottom': '20px', 'display': 'flex', 'gap': '20px'}),
+    #------2/3 detector selector to use in bin calculation-----------------
+    html.Div([
+    html.Label("Select tool configuration:", style={'margin-right': '16px'}),
+    dcc.RadioItems(
+        id='detector-tool-switch',
+        options=[
+            {'label': '2 Detector tool (RSS-AZG)', 'value': '2det'},
+            {'label': '3 Detector tool (AZG)', 'value': '3det'}
+        ],
+        value='3det',
+        labelStyle={'display': 'inline-block', 'margin-right': '32px'}
+    )
+], style={'margin-bottom': '16px', 'margin-top': '16px'}),
+
     
     # --- Heatmap/image by bin (Unshifted) ---
     dcc.Graph(id='b-heatmap'),
@@ -295,16 +295,30 @@ app.layout = html.Div([
             dcc.Input(id='start-depth', type='number', value=0, style={'margin-right': '16px', 'width': '100px'}),
             html.Label("End Depth:"),
             dcc.Input(id='end-depth', type='number', value=100, style={'margin-right': '16px', 'width': '100px'}),
-            html.Button("Apply", id='apply-depth', n_clicks=0, style={'margin-left': '12px'}),
+            html.Button("Apply EasyDepth", id='apply-depth', n_clicks=0, style={'margin-left': '12px'}),
         ], style={'margin-bottom': '8px'}),
         html.Div(id='depth-apply-status', style={'color': '#00528C'})
     ], style={'border': '2px solid #C4C4C4', 'border-radius': '12px', 'padding': '16px', 'margin': '30px 0'}),
+
+    #---Real time-depth file load button-----
+    html.Div([
+    html.Span("Apply real Time-Depth file", style={'margin-right': '16px'}),
+    dcc.Upload(
+        id='upload-timedepth',
+        children=html.Button('Load Time Depth file'),
+        accept='.txt,.csv,.tsv,.dat,text/plain',
+        multiple=False,
+        style={'display': 'inline-block'}
+    )
+    ], style={'display': 'flex', 'alignItems': 'center', 'margin-top': '10px', 'margin-bottom': '8px'}),
+#############DO NOT FORGET TO IMPLEMENT CALLBACK#######################
+
 
     # --- Time series chart and column selector ---
     dcc.Dropdown(
         id='column-dropdown',
         options=[{'label': col, 'value': col} for col in numeric_columns],
-        value=numeric_columns[0] if numeric_columns else None,
+        value='RPM' if numeric_columns else None,
         clearable=False,
         style={'width': '50%'}
     ),
@@ -381,7 +395,7 @@ def update_manual_scale(set_clicks, reset_clicks, manual_min, manual_max):
     ctx = dash.callback_context
     if not ctx.triggered:
         # On first page load: set to 0/200
-        return 0, 200
+        return 0, 300
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
     if button_id == 'set-b-scale':
         return 0, 200
@@ -394,20 +408,27 @@ def update_manual_scale(set_clicks, reset_clicks, manual_min, manual_max):
     Output('time-series-chart', 'figure'),
     Input('column-dropdown', 'value'),
     Input('start-record', 'value'),
-    Input('end-record', 'value')
+    Input('end-record', 'value'),
+    Input('detector-tool-switch', 'value')
 )
-def update_chart(selected_col, start_rec, end_rec):
+def update_chart(selected_col, start_rec, end_rec, detector_tool_value):
     """
-    Draws a time series plot for the selected column (typically a numeric field).
+    Draws a time series plot for the selected column.
     This plot is not filtered by RPM—shows all records in the user-selected range.
     """
-    if not selected_col or selected_col not in df.columns:
+    detectors = 2 if detector_tool_value == '2det' else 3
+    dff = df.copy()
+    for i in range(1, 25):
+        b_col = f'B{i}'
+        if b_col in dff.columns:
+            dff[b_col] = dff[b_col] * 1000 * 3 / detectors
+    if not selected_col or selected_col not in dff.columns:
         return {}
     # Filter to user-specified range (by RecordNumber)
     if start_rec is not None and end_rec is not None:
-        df_filtered = df[(df['RecordNumber'] >= start_rec) & (df['RecordNumber'] <= end_rec)]
+        df_filtered = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)]
     else:
-        df_filtered = df
+        df_filtered = dff
     fig = px.line(df_filtered, x='RecordNumber', y=selected_col,
                   title=f"Time Series of {selected_col} (Records {start_rec} to {end_rec})",
                   labels={'RecordNumber': 'Record Number', selected_col: selected_col})
@@ -420,21 +441,33 @@ def update_chart(selected_col, start_rec, end_rec):
     Output('data-table', 'data'),
     Input('column-toggle', 'value'),
     Input('start-record', 'value'),
-    Input('end-record', 'value')
+    Input('end-record', 'value'),
+    Input('detector-tool-switch', 'value')
 )
-
-def update_table_columns_and_data(visible_cols, start_rec, end_rec):
+def update_table_columns_and_data(visible_cols, start_rec, end_rec, detector_tool_value):
     """
     Updates the columns and data in the main table.
-    Applies column toggling and record range filtering.
+    Applies column toggling, record range filtering, and detector scaling.
     """
     if not visible_cols:
         return [], []
+    # Determine number of detectors (2 or 3) based on selector input
+    detectors = 2 if detector_tool_value == '2det' else 3
+
+    # Copy the DataFrame for safe modifications
+    dff = df.copy()
+
+    # Scale B columns for the detector tool
+    for i in range(1, 25):
+        b_col = f'B{i}'
+        if b_col in dff.columns:
+            dff[b_col] = dff[b_col] * 1000 * 3 / detectors
+
     # Filter dataframe to selected record range by RecordNumber
     if start_rec is not None and end_rec is not None:
-        df_filtered = df[(df['RecordNumber'] >= start_rec) & (df['RecordNumber'] <= end_rec)]
-    else:
-        df_filtered = df
+        dff = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)]
+
+    # Set up columns with formatting for B columns
     cols = [
         {
             'name': col,
@@ -444,9 +477,11 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
                 if re.fullmatch(r"B([1-9]|1[0-9]|2[0-4])", col) else None
         }
         for col in visible_cols
-]
-    data = df_filtered[visible_cols].to_dict('records')
+    ]
+    data = dff[visible_cols].to_dict('records')
     return cols, data
+
+
 
 # --- Heatmap callback (main, unshifted, by bin number) ---
 @app.callback(
@@ -455,19 +490,32 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
     Input('end-record', 'value'),
     Input('manual-min', 'value'),
     Input('manual-max', 'value'),
-    Input('rpm-filtered', 'data')
+    Input('rpm-filtered', 'data'),
+    Input('detector-tool-switch', 'value')
 )
-
-
-
-def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
+def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered, detector_tool_value):
     """
     Generates the primary 24-bin heatmap plot.
     This plot can be filtered by RPM using 'rpm-filtered'.
     Overlays RPM as a blue curve if present.
     """
+    # Determine number of detectors (2 or 3) based on selector input
+    detectors = 2 if detector_tool_value == '2det' else 3
+
+    # Build the B column list
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
+
+    # Recompute B columns using detector scaling
+    for i in range(1, 25):
+        b_col = f'B{i}'
+        if b_col in dff.columns:
+            dff[b_col] = dff[b_col] * 1000 * 3 / detectors
+            #times 1000 to go from counts per millisecond to counts per second
+            # times three since each detector is only receiving counts from one third of the cylinder
+            # dividing by three or two depending on tool, for the averaging of counts for each bin
+
+    # Apply RPM filter to the data if needed
     if rpm_filtered and 'RPM' in dff.columns:
         dff = dff[dff['RPM'] >= 30]
         
@@ -640,15 +688,23 @@ def update_max_record(contents, filename):
     Input('end-record', 'value'),
     Input('manual-min', 'value'),
     Input('manual-max', 'value'),
-    Input('rpm-filtered', 'data')
+    Input('rpm-filtered', 'data'),
+    Input('detector-tool-switch', 'value')
 )
-def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
+def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered, detector_tool_value):
     '''
     Builds the shifted heatmap/image, where each row's B columns 
     are circularly shifted left by BinRefAtStart.
     '''
+    detectors = 2 if detector_tool_value == '2det' else 3
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
+    
+    for i in range(1, 25):
+        b_col = f'B{i}'
+        if b_col in dff.columns:
+            dff[b_col] = dff[b_col] * 1000 * 3 / detectors
+        
     if rpm_filtered and 'RPM' in dff.columns:
         dff = dff[dff['RPM'] >= 30]
     if start_rec is None or end_rec is None or start_rec > end_rec:
@@ -664,7 +720,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         b_values = row[b_cols].values
         b_shifted = np.roll(b_values, -shift)
         shifted_b_matrix.append(b_shifted)
-        z_data = np.array(shifted_b_matrix, dtype=float)
+    z_data = np.array(shifted_b_matrix, dtype=float)
     y_labels = [
         f"{int(recnum)} | {ts.strftime('%Y-%m-%d %H:%M:%S') if not pd.isnull(ts) else ''}"
         for recnum, ts in zip(df_slice['RecordNumber'], df_slice['TimeStamp'])
@@ -697,7 +753,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         hoverongaps=False
     ))
     fig.update_layout(
-        title=f"Dynamically shifted by BinRefAtStart 24-Bin Image (Records {start_rec} to {end_rec})",
+        title=f"Dynamically shifted by BinRefAtStart for UP RIGHT DOWN LEFT UP Display Orientation(Records {start_rec} to {end_rec})",
         xaxis_title="",
         yaxis_title="Record Number and TimeStamp",
         yaxis_autorange='reversed',
