@@ -9,18 +9,29 @@ from dash.dash_table.Format import Format, Scheme
 import io
 import base64
 
-
+# --------- Data Loading ---------
 def load_data(filepath):
+    """
+    Loads data from a CSV file and parses the TimeStamp column to datetime.
+
+    Args:
+        filepath (str): Path to the data file.
+
+    Returns:
+        pd.DataFrame: Loaded dataframe.
+    """
     df = pd.read_csv(filepath, comment='#')
     df['TimeStamp'] = pd.to_datetime(df['TimeStamp'])
     return df
 
+# --------- Initialize the Dash App ---------
 app = Dash(__name__)
 
+# --------- Load Initial Data ---------
 df = load_data("Data_example.txt")
 
-# Ensure TimeStamp is a string for startswith, or use dt.strftime if it's datetime
-# Ignore the 2000-01 records 
+# --------- Data Cleaning: Remove Jan 2000 rows ---------
+# Handles TimeStamp as either string or datetime
 if pd.api.types.is_datetime64_any_dtype(df['TimeStamp']):
     mask = ~df['TimeStamp'].dt.strftime('%Y-%m').eq('2000-01')
 else:
@@ -28,19 +39,20 @@ else:
 
 df = df[mask].reset_index(drop=True)
 
-# Add B1 through B24 if not present
+# --------- Ensure B1 through B24 Exist ---------
 for i in range(1, 25):
     col_name = f'B{i}'
     if col_name not in df.columns:
         df[col_name] = np.nan
 
-# Identify all Dwell columns, case-insensitively, to avoid missing one
+# --------- Compute Total Dwell Time (TotDwell) ---------
+# This finds all columns named Dwell1..Dwell24 (case-insensitive) and sums them for each row
 Dwell_cols = [col for col in df.columns if col.lower().startswith('dwell')]
 Dwell_cols = [col for col in Dwell_cols if re.fullmatch(r'Dwell([1-9]|1[0-9]|2[0-4])', col, re.IGNORECASE)]
 Dwell_cols = sorted(Dwell_cols, key=lambda x: int(re.findall(r'\d+', x)[0]))
 df['TotDwell'] = df[Dwell_cols].sum(axis=1)
 
-# Columns to exclude from display (case-insensitive)
+# --------- Exclude Some Columns from Display ---------
 excluded_cols = [
     'RecordStatus',
     'Status',
@@ -51,16 +63,16 @@ excluded_cols = [
 ]
 excluded_cols_set = {x.lower() for x in excluded_cols}
 
-# List the *prefixes* to match columns
+# --------- Hide Certain Columns (by Prefix or B number) from Table by Default ---------
 hide_prefixes = [
     "Dwell", "D1Bin", "D2Bin", "D3Bin", "B"
 ]
 b_regex = re.compile(r"^B([1-9]|1[0-9]|2[0-4])$", re.IGNORECASE)
 
-# Gather all display columns (after exclusions above)
+# ---------Gather all display columns (after exclusions above)--------------------------
 display_columns = [col for col in df.columns if col.lower() not in excluded_cols_set]
 
-# Find columns to hide by default:
+# ----------------------Find columns to hide by default--------------------------------
 hidden_columns = []
 for col in display_columns:
     if any(col.startswith(prefix) for prefix in hide_prefixes) or b_regex.match(col):
@@ -68,8 +80,13 @@ for col in display_columns:
 visible_columns = [col for col in display_columns if col not in hidden_columns]
 checklist_options = [{'label': col, 'value': col} for col in display_columns]
 
-# Define numeric_columns after creating excluded_cols
+# --------- Find Numeric Columns (for plotting, dropdowns, etc) ---------
 numeric_columns = [col for col in df.select_dtypes(include='number').columns if col not in excluded_cols]
+
+# --------- Explicit Calculation of B1...B24 columns ---------
+# Calculating counts per millisecond (counts/dwell) in each bin from 3 detectors 
+# and averaging them out (see note in spec about this not being a valid method)
+# Written out instead of using a loop, for manual checking of validity
 
 df['B1'] = (
     np.where(df['Dwell1']  != 0, df['D1Bin1']  / df['Dwell1'],  np.nan) +
@@ -79,7 +96,7 @@ df['B1'] = (
 df['B2'] = (
     np.where(df['Dwell2']  != 0, df['D1Bin2']  / df['Dwell2'],  np.nan) +
     np.where(df['Dwell17'] != 0, df['D2Bin2']  / df['Dwell17'], np.nan) +  
-    np.where(df['Dwell9'] != 0, df['D3Bin2']  / df['Dwell9'], np.nan)    
+    np.where(df['Dwell9']  != 0, df['D3Bin2']  / df['Dwell9'],  np.nan)    
 )
 df['B3'] = (
     np.where(df['Dwell3']  != 0, df['D1Bin3']  / df['Dwell3'],  np.nan) +
@@ -113,7 +130,7 @@ df['B8'] = (
 )
 df['B9'] = (
     np.where(df['Dwell9']  != 0, df['D1Bin9']  / df['Dwell9'],  np.nan) +
-    np.where(df['Dwell24']  != 0, df['D2Bin9']  / df['Dwell24'],  np.nan) +
+    np.where(df['Dwell24'] != 0, df['D2Bin9']  / df['Dwell24'], np.nan) +
     np.where(df['Dwell16'] != 0, df['D3Bin9']  / df['Dwell16'], np.nan)
 )
 df['B10'] = (
@@ -192,18 +209,29 @@ df['B24'] = (
     np.where(df['Dwell7']  != 0, df['D3Bin24'] / df['Dwell7'],  np.nan)
 )
 
-#FOR NOW UNTIL CALS 1,2,3 are used
-CAL123 = 1
+
 
 for i in range(1, 25):
     b_col = f'B{i}'
     if b_col in df.columns:
-        df[b_col] = df[b_col] * 1000 / CAL123
+        df[b_col] = df[b_col] * 1000 * 3 / 3
+        
+#times 1000 to go from counts per millisecond to counts per second
+# times three since each detector is only receiving counts from one third of the cylinder
+# dividing by three for the averaging of counts mentioned above
+# keeping for clarity
 
-# Dash Layout with manual scale controls, defaults, and buttons
+
+
+
+# ---------------------------------------------------------
+# --------- DASH LAYOUT SECTION (UI elements) -------------
+# ---------------------------------------------------------
+
 app.layout = html.Div([
     html.H1("RSS-AZG Data Analysis Tool"),
     
+    # --- Record Range Selectors ---
     html.H3("Select range of records to display:"),
     html.Div([
         html.Label("Start Record Number (minimum is 1):"),
@@ -226,7 +254,7 @@ app.layout = html.Div([
             step=1,
             style={'width': '120px'}
         ),
-        
+        # Shows the maximum record number
         html.Span(
             id='max-record-display',
             children=f"(Max Record number for this file is {int(df['RecordNumber'].max())})",
@@ -235,7 +263,7 @@ app.layout = html.Div([
 
         
     ], style={'margin-bottom': '20px', 'display': 'flex', 'gap': '20px'}),
-    
+    # --- Color scale controls and gamma scale buttons ---
     html.Div([
         html.Label("Min color scale:"),
         dcc.Input(id='manual-min', type='number', value=0, debounce=True, step=0.01, style={'width': '120px'}),
@@ -245,19 +273,21 @@ app.layout = html.Div([
         html.Button("Auto Color Range (auto-updates with record range change)", id='reset-b-scale', n_clicks=0)
     ], style={'margin-bottom': '20px', 'display': 'flex', 'gap': '20px'}),
     
+    # --- Heatmap/image by bin (Unshifted) ---
     dcc.Graph(id='b-heatmap'),
     
-    
+    # --- Heatmap/image by URDLR (Shifted by BinRefAtStart) ---
     dcc.Graph(id='b-heatmap-shifted'),
 
     
     
-    
+    # --- RPM filtering controls (applied only to heatmaps) to hide data at connections/overnight/not drilling ---
     html.Div([
     html.Button("Hide data below 30 RPM in heatmap", id='hide-below-30rpm', n_clicks=0, style={'margin-right': '10px'}),
     html.Button("Restore sliding data", id='show-all-rpm', n_clicks=0)
     ], style={'margin-bottom': '20px', 'margin-top': '10px'}),
 
+    # --- Field-only plots ---
     html.Div([
         html.H4("Test facility plot generation, for field logs only, NOT for final logs. No guarantee of accuracy.", style={'margin-bottom': '12px'}),
         html.Div([
@@ -270,7 +300,7 @@ app.layout = html.Div([
         html.Div(id='depth-apply-status', style={'color': '#00528C'})
     ], style={'border': '2px solid #C4C4C4', 'border-radius': '12px', 'padding': '16px', 'margin': '30px 0'}),
 
-    
+    # --- Time series chart and column selector ---
     dcc.Dropdown(
         id='column-dropdown',
         options=[{'label': col, 'value': col} for col in numeric_columns],
@@ -281,8 +311,6 @@ app.layout = html.Div([
     dcc.Graph(id='time-series-chart'),
     html.H3("Toggle Table Columns to Display"),
     
-
-
     
     dcc.Checklist(
         id='column-toggle',
@@ -296,6 +324,7 @@ app.layout = html.Div([
     style={'margin-bottom': '10px', 'fontStyle': 'italic', 'color': '#555'}
     ),
     
+    # --- Main Data Table ---
     dash_table.DataTable(
         id='data-table',
         columns=[
@@ -317,24 +346,29 @@ app.layout = html.Div([
         style_header={'fontWeight': 'bold'}
     ),
 
-dcc.Store(id='rpm-filtered', data=False),
+    # --- Store for heatmap filtering state (RPM filter) ---
+    dcc.Store(id='rpm-filtered', data=False),
 
-
-html.Div([
-    html.Hr(),
-    dcc.Upload(
-        id='upload-data',
-        children=html.Button('Select Different Data Source Text File'),
-        accept='.txt,.csv,.tsv,.dat,text/plain',
-        multiple=False,
-        style={'margin-top': '40px'}
-    ),
-    html.Div(id='upload-status', style={'margin-top': '10px', 'color': '#00528C'})
+    # --- Data source file upload UI ---
+    html.Div([
+        html.Hr(),
+        dcc.Upload(
+            id='upload-data',
+            children=html.Button('Select Different Data Source Text File'),
+            accept='.txt,.csv,.tsv,.dat,text/plain',
+            multiple=False,
+            style={'margin-top': '40px'}
+        ),
+        html.Div(id='upload-status', style={'margin-top': '10px', 'color': '#00528C'})
+    ])
 ])
 
 
-])
+# ---------------------------------------------------------
+# ----------------- DASH CALLBACKS ------------------------
+# ---------------------------------------------------------
 
+# --- Gamma scale control callback: set to 0-200 or auto depending on which button was pressed ---
 @app.callback(
     [Output('manual-min', 'value'),
      Output('manual-max', 'value')],
@@ -355,6 +389,7 @@ def update_manual_scale(set_clicks, reset_clicks, manual_min, manual_max):
         return None, None
     return manual_min, manual_max
 
+# --- Update the time series chart (unfiltered by RPM) ---
 @app.callback(
     Output('time-series-chart', 'figure'),
     Input('column-dropdown', 'value'),
@@ -362,6 +397,10 @@ def update_manual_scale(set_clicks, reset_clicks, manual_min, manual_max):
     Input('end-record', 'value')
 )
 def update_chart(selected_col, start_rec, end_rec):
+    """
+    Draws a time series plot for the selected column (typically a numeric field).
+    This plot is not filtered by RPM—shows all records in the user-selected range.
+    """
     if not selected_col or selected_col not in df.columns:
         return {}
     # Filter to user-specified range (by RecordNumber)
@@ -375,6 +414,7 @@ def update_chart(selected_col, start_rec, end_rec):
     fig.update_layout(transition_duration=500)
     return fig
 
+# --- Update the main data table based on column toggles and record range ---
 @app.callback(
     Output('data-table', 'columns'),
     Output('data-table', 'data'),
@@ -382,7 +422,12 @@ def update_chart(selected_col, start_rec, end_rec):
     Input('start-record', 'value'),
     Input('end-record', 'value')
 )
+
 def update_table_columns_and_data(visible_cols, start_rec, end_rec):
+    """
+    Updates the columns and data in the main table.
+    Applies column toggling and record range filtering.
+    """
     if not visible_cols:
         return [], []
     # Filter dataframe to selected record range by RecordNumber
@@ -403,7 +448,7 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
     data = df_filtered[visible_cols].to_dict('records')
     return cols, data
 
-
+# --- Heatmap callback (main, unshifted, by bin number) ---
 @app.callback(
     Output('b-heatmap', 'figure'),
     Input('start-record', 'value'),
@@ -416,6 +461,11 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
 
 
 def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
+    """
+    Generates the primary 24-bin heatmap plot.
+    This plot can be filtered by RPM using 'rpm-filtered'.
+    Overlays RPM as a blue curve if present.
+    """
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
     if rpm_filtered and 'RPM' in dff.columns:
@@ -449,7 +499,7 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
         [1.0, 'black']
     ]
     
-    # Display both RecordNumber and TimeStamp as y-axis labels
+    # Build the y-axis labels to show both RecordNumber and TimeStamp (if both are present)
     if 'RecordNumber' in df_slice.columns and 'TimeStamp' in df_slice.columns:
         y_labels = [
             f"{int(recnum)} | {ts.strftime('%Y-%m-%d %H:%M:%S') if not pd.isnull(ts) else ''}"
@@ -473,7 +523,7 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
         hoverongaps=False
     ))
     
-    # Overlay RPM curve (scatter), sharing y-axis, with a transparent background.
+    # Overlay the RPM curve on the heatmap if RPM is present
     if 'RPM' in df_slice.columns:
         fig.add_trace(
             go.Scatter(
@@ -512,20 +562,22 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
     )
     return fig
 
-
+# --- Upload data file, replace DataFrame with uploaded file ---
 @app.callback(
     Output('upload-status', 'children'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename')
 )
 def update_data_source(contents, filename):
+    """
+    Handles the file upload. Replaces the DataFrame with the uploaded file.
+    """
     if contents is None:
         return ""
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     try:
         # Try loading as a text file (CSV/TSV or whitespace delimited)
-        # You can refine parsing based on your file style
         df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', sep=None, engine='python')
         global df
         df = df_new
@@ -533,7 +585,7 @@ def update_data_source(contents, filename):
     except Exception as e:
         return f"Error loading file '{filename}': {e}"
 
-
+# --- Set RPM filter flag for heatmap filtering (True/False) ---
 @app.callback(
     Output('rpm-filtered', 'data'),
     [Input('hide-below-30rpm', 'n_clicks'),
@@ -541,6 +593,9 @@ def update_data_source(contents, filename):
     prevent_initial_call=True
 )
 def set_rpm_filter(hide_clicks, show_clicks):
+    """
+    Sets a boolean store to indicate whether the heatmap should show only data with RPM >= 30.
+    """
     ctx = dash.callback_context
     if not ctx.triggered:
         return False
@@ -551,12 +606,16 @@ def set_rpm_filter(hide_clicks, show_clicks):
         return False
     return False
 
+# --- Update max-record display when a new file is loaded ---
 @app.callback(
     Output('max-record-display', 'children'),
     [Input('upload-data', 'contents')],
     [State('upload-data', 'filename')]
 )
 def update_max_record(contents, filename):
+    """
+    Updates the text showing the maximum record number for the currently loaded data file.
+    """
     global df
     if contents is not None:
         try:
@@ -574,6 +633,7 @@ def update_max_record(contents, filename):
     else:
         return "(Max Record number for this file is ?)"
 
+# --- Heatmap with B columns circularly shifted left by BinRefAtStart (to show oriented per URDLU) ---
 @app.callback(
     Output('b-heatmap-shifted', 'figure'),
     Input('start-record', 'value'),
@@ -583,6 +643,10 @@ def update_max_record(contents, filename):
     Input('rpm-filtered', 'data')
 )
 def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
+    '''
+    Builds the shifted heatmap/image, where each row's B columns 
+    are circularly shifted left by BinRefAtStart.
+    '''
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
     if rpm_filtered and 'RPM' in dff.columns:
@@ -593,7 +657,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
     if df_slice.empty:
         return go.Figure()
     
-    # Now perform circular shift for each row by BinRefAtStart
+    # For each row, perform a circular shift by BinRefAtStart
     shifted_b_matrix = []
     for _, row in df_slice.iterrows():
         shift = int(row['BinRefAtStart']) % 24 if not pd.isnull(row['BinRefAtStart']) else 0
@@ -648,7 +712,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
 
     return fig
 
-
+# --- Interpolated depth calculator for test facility logs ---
 @app.callback(
     Output('depth-apply-status', 'children'),
     Input('apply-depth', 'n_clicks'),
@@ -659,6 +723,11 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
     State('rpm-filtered', 'data')
 )
 def apply_depths(n_clicks, start_depth, end_depth, start_rec, end_rec, rpm_filtered):
+    """
+    When operator clicks "Apply" in the Depth section, calculates
+    linearly interpolated depths from Start Depth to End Depth, 
+    for the records visible in the current image (with RPM filtering if active).
+    """
     if n_clicks == 0 or start_depth is None or end_depth is None:
         return ""
     global df
@@ -679,6 +748,6 @@ def apply_depths(n_clicks, start_depth, end_depth, start_rec, end_rec, rpm_filte
     return f"Depth column applied to {n} records (from {start_depth} to {end_depth} feet)."
 
 
-
+# --- Standard Dash main entry point ---
 if __name__ == '__main__':
     app.run(debug=True)
