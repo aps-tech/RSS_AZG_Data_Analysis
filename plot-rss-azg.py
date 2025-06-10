@@ -247,6 +247,10 @@ app.layout = html.Div([
     
     dcc.Graph(id='b-heatmap'),
     
+    
+    dcc.Graph(id='b-heatmap-shifted'),
+
+    
     html.Div([
     html.Button("Hide data below 30 RPM in heatmap", id='hide-below-30rpm', n_clicks=0, style={'margin-right': '10px'}),
     html.Button("Restore sliding data", id='show-all-rpm', n_clicks=0)
@@ -395,6 +399,8 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec):
     Input('rpm-filtered', 'data')
 )
 
+
+
 def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
     b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
@@ -484,7 +490,7 @@ def update_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
         fig.data[0].opacity = 1.0
     
     fig.update_layout(
-        title=f"24-Bin Data Heatmap (Records {start_rec} to {end_rec})",
+        title=f"24-Bin Data Image (unshifted) (Records {start_rec} to {end_rec})",
         xaxis_title="Bins 1-24",
         yaxis_title="Record Number and TimeStamp",
         yaxis_autorange='reversed',
@@ -553,6 +559,81 @@ def update_max_record(contents, filename):
         return f"(Max Record number for this file is {int(df['RecordNumber'].max())})"
     else:
         return "(Max Record number for this file is ?)"
+
+@app.callback(
+    Output('b-heatmap-shifted', 'figure'),
+    Input('start-record', 'value'),
+    Input('end-record', 'value'),
+    Input('manual-min', 'value'),
+    Input('manual-max', 'value'),
+    Input('rpm-filtered', 'data')
+)
+def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered):
+    b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
+    dff = df.copy()
+    if rpm_filtered and 'RPM' in dff.columns:
+        dff = dff[dff['RPM'] >= 30]
+    if start_rec is None or end_rec is None or start_rec > end_rec:
+        return go.Figure()
+    df_slice = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)].copy()
+    if df_slice.empty:
+        return go.Figure()
+    
+    # Now perform circular shift for each row by BinRefAtStart
+    shifted_b_matrix = []
+    for _, row in df_slice.iterrows():
+        shift = int(row['BinRefAtStart']) % 24 if not pd.isnull(row['BinRefAtStart']) else 0
+        b_values = row[b_cols].values
+        b_shifted = np.roll(b_values, -shift)
+        shifted_b_matrix.append(b_shifted)
+        z_data = np.array(shifted_b_matrix, dtype=float)
+    y_labels = [
+        f"{int(recnum)} | {ts.strftime('%Y-%m-%d %H:%M:%S') if not pd.isnull(ts) else ''}"
+        for recnum, ts in zip(df_slice['RecordNumber'], df_slice['TimeStamp'])
+    ] if 'RecordNumber' in df_slice.columns and 'TimeStamp' in df_slice.columns else df_slice.index.astype(str)
+    x_labels = b_cols
+    all_b_vals = z_data.flatten()
+    nonzero_vals = all_b_vals[(all_b_vals != 0) & ~np.isnan(all_b_vals)]
+    if nonzero_vals.size > 0:
+        auto_min_b = np.min(nonzero_vals)
+        auto_max_b = np.max(nonzero_vals)
+    else:
+        auto_min_b, auto_max_b = 0, 1
+    min_b = manual_min if manual_min is not None else auto_min_b
+    max_b = manual_max if manual_max is not None else auto_max_b
+    colorscale = [
+        [0.0, 'white'],
+        [0.25, 'yellow'],
+        [0.5, 'orange'],
+        [0.75, 'red'],
+        [1.0, 'black']
+    ]
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data,
+        x=x_labels,
+        y=y_labels,
+        colorscale=colorscale,
+        colorbar=dict(title='Gamma'),
+        zmin=min_b,
+        zmax=max_b,
+        hoverongaps=False
+    ))
+    fig.update_layout(
+        title=f"Dynamically shifted by BinRefAtStart 24-Bin Image (Records {start_rec} to {end_rec})",
+        xaxis_title="",
+        yaxis_title="Record Number and TimeStamp",
+        yaxis_autorange='reversed',
+        margin=dict(l=60, r=40, t=40, b=60)
+    )
+    
+    fig.update_xaxes(
+    tickvals=[-0.5, 6.5, 12.5, 18.5, 23.5],
+    ticktext=["Up", "Right", "Down", "Left", "Up"],
+    range=[-0.5, 23.5]
+    )
+
+    return fig
+
 
 
 if __name__ == '__main__':
