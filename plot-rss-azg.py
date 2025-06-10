@@ -226,6 +226,14 @@ app.layout = html.Div([
             step=1,
             style={'width': '120px'}
         ),
+        
+        html.Span(
+            id='max-record-display',
+            children=f"(Max Record number for this file is {int(df['RecordNumber'].max())})",
+            style={'margin-left': '16px', 'alignSelf': 'center', 'fontWeight': 'bold', 'color': '#00528C'}
+        ),
+
+        
     ], style={'margin-bottom': '20px', 'display': 'flex', 'gap': '20px'}),
     
     html.Div([
@@ -523,6 +531,28 @@ def set_rpm_filter(hide_clicks, show_clicks):
         return False
     return False
 
+@app.callback(
+    Output('max-record-display', 'children'),
+    [Input('upload-data', 'contents')],
+    [State('upload-data', 'filename')]
+)
+def update_max_record(contents, filename):
+    global df
+    if contents is not None:
+        try:
+            content_type, content_string = contents.split(',')
+            decoded = base64.b64decode(content_string)
+            df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', sep=None, engine='python')
+            if 'RecordNumber' in df_new.columns:
+                max_rec = int(df_new['RecordNumber'].max())
+                return f"(Max Record number for this file is {max_rec})"
+        except Exception:
+            return "(Max Record number for this file is ?)"
+    # Default (startup or fallback)
+    if 'RecordNumber' in df.columns:
+        return f"(Max Record number for this file is {int(df['RecordNumber'].max())})"
+    else:
+        return "(Max Record number for this file is ?)"
 
 
 if __name__ == '__main__':
