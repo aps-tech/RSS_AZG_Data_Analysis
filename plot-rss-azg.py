@@ -729,7 +729,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         hoverongaps=False
     ))
     fig.update_layout(
-        title=f"Dynamically shifted by BinRefAtStart for UP RIGHT DOWN LEFT UP Display Orientation(Records {start_rec} to {end_rec})",
+        title=f"AZG Image (Records {start_rec} to {end_rec})",
         xaxis_title="",
         yaxis_title="Record Number and TimeStamp",
         yaxis_autorange='reversed',
