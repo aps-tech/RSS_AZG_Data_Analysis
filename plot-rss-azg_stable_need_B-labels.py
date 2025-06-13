@@ -305,8 +305,8 @@ app.layout = html.Div([
         dcc.RadioItems(
             id='heatmap-shift-mode',
             options=[
-                {'label': 'Shift by BinRefAtStart (UP RIGHT DOWN LEFT UP)', 'value': 'shift'},
-                {'label': 'No Shift (Raw Bins)', 'value': 'raw'}
+                {'label': 'Shift by BinRefAtStart', 'value': 'shift'},
+                {'label': 'No Shift', 'value': 'raw'}
             ],
             value='shift',
             labelStyle={'display': 'inline-block', 'margin-right': '16px'}
@@ -340,7 +340,7 @@ app.layout = html.Div([
         ),
         
         html.Div([
-            html.Label("Environmental Correction:"), 
+            html.Label("Environmental Correction:"), #not working, not applied correctly
             dcc.Input(
                 id='env_corr',
                 type='number',
@@ -710,14 +710,6 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         [0.75, 'red'],
         [1.0, 'black']
     ]
-    
-    # Build the x_labels for the x-axis
-    if shift_mode_value == 'shift':
-        x_labels = b_cols
-    else:
-        x_labels = b_cols
-
-        
     fig = go.Figure(data=go.Heatmap(
         z=z_data,
         x=x_labels,
@@ -736,17 +728,10 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         margin=dict(l=60, r=40, t=40, b=60)
     )
     
-    if shift_mode_value == 'shift':
-        fig.update_xaxes(
-            tickvals=[-0.5, 6.5, 12.5, 18.5, 23.5],
-            ticktext=["Up", "Right", "Down", "Left", "Up"],
-            range=[-0.5, 23.5]
-    )
-    else:
-        fig.update_xaxes(
-            tickvals=None,
-            ticktext=None,
-            range=[-0.5, 23.5]
+    fig.update_xaxes(
+    tickvals=[-0.5, 6.5, 12.5, 18.5, 23.5],
+    ticktext=["Up", "Right", "Down", "Left", "Up"],
+    range=[-0.5, 23.5]
     )
 
     return fig
