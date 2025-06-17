@@ -738,7 +738,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
     
     if shift_mode_value == 'shift':
         fig.update_xaxes(
-            tickvals=[-0.5, 6.5, 12.5, 18.5, 23.5],
+            tickvals=[-0.5, 5.5, 11.5, 17.5, 23.5],
             ticktext=["Up", "Right", "Down", "Left", "Up"],
             range=[-0.5, 23.5]
     )
