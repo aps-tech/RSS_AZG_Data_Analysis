@@ -40,6 +40,7 @@ def apply_detector_scaling(dff, detectors=2, env_corr=5.89, AZG_factor=0.15):
         if b_col in dff.columns:
             dff[b_col] = dff[b_col] * 1000 * 3 / detectors * env_corr * AZG_factor
     return dff
+    #not being used anymore since detector-select rewrite
 
 
 
@@ -108,148 +109,148 @@ numeric_columns = [col for col in df.select_dtypes(include='number').columns if 
 # Written out instead of using a loop, for manual checking of validity
 
 #B1
-df['B1D1_scaled'] = np.where(df['Dwell1'] != 0, df['D1Bin1'] / df['Dwell1'], np.nan)
-df['B1D2_scaled'] = np.where(df['Dwell16'] != 0, df['D2Bin1'] / df['Dwell16'], np.nan)
-df['B1D3_scaled'] = np.where(df['Dwell8'] != 0, df['D3Bin1'] / df['Dwell8'], np.nan)
+df['B1D1_scaled'] = np.where(df['Dwell1'] != 0, df['D1Bin1'] / df['Dwell1'] * 1000, np.nan)
+df['B1D2_scaled'] = np.where(df['Dwell16'] != 0, df['D2Bin1'] / df['Dwell16'] * 1000, np.nan)
+df['B1D3_scaled'] = np.where(df['Dwell8'] != 0, df['D3Bin1'] / df['Dwell8'] * 1000, np.nan)
 df['B1'] = df[['B1D1_scaled', 'B1D2_scaled', 'B1D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 
 # B2
-df['B2D1_scaled'] = np.where(df['Dwell2']  != 0, df['D1Bin2']  / df['Dwell2'],  np.nan)
-df['B2D2_scaled'] = np.where(df['Dwell17'] != 0, df['D2Bin2']  / df['Dwell17'], np.nan)
-df['B2D3_scaled'] = np.where(df['Dwell9']  != 0, df['D3Bin2']  / df['Dwell9'],  np.nan)
+df['B2D1_scaled'] = np.where(df['Dwell2']  != 0, df['D1Bin2']  / df['Dwell2'] * 1000,  np.nan)
+df['B2D2_scaled'] = np.where(df['Dwell17'] != 0, df['D2Bin2']  / df['Dwell17'] * 1000, np.nan)
+df['B2D3_scaled'] = np.where(df['Dwell9']  != 0, df['D3Bin2']  / df['Dwell9'] * 1000,  np.nan)
 df['B2'] = df[['B2D1_scaled', 'B2D2_scaled', 'B2D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B3
-df['B3D1_scaled'] = np.where(df['Dwell3']  != 0, df['D1Bin3']  / df['Dwell3'],  np.nan)
-df['B3D2_scaled'] = np.where(df['Dwell18'] != 0, df['D2Bin3']  / df['Dwell18'], np.nan)
-df['B3D3_scaled'] = np.where(df['Dwell10'] != 0, df['D3Bin3']  / df['Dwell10'], np.nan)
+df['B3D1_scaled'] = np.where(df['Dwell3']  != 0, df['D1Bin3']  / df['Dwell3'] * 1000,  np.nan)
+df['B3D2_scaled'] = np.where(df['Dwell18'] != 0, df['D2Bin3']  / df['Dwell18'] * 1000, np.nan)
+df['B3D3_scaled'] = np.where(df['Dwell10'] != 0, df['D3Bin3']  / df['Dwell10'] * 1000, np.nan)
 df['B3'] = df[['B3D1_scaled', 'B3D2_scaled', 'B3D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B4
-df['B4D1_scaled'] = np.where(df['Dwell4']  != 0, df['D1Bin4']  / df['Dwell4'],  np.nan)
-df['B4D2_scaled'] = np.where(df['Dwell19'] != 0, df['D2Bin4']  / df['Dwell19'], np.nan)
-df['B4D3_scaled'] = np.where(df['Dwell11'] != 0, df['D3Bin4']  / df['Dwell11'], np.nan)
+df['B4D1_scaled'] = np.where(df['Dwell4']  != 0, df['D1Bin4']  / df['Dwell4'] * 1000,  np.nan)
+df['B4D2_scaled'] = np.where(df['Dwell19'] != 0, df['D2Bin4']  / df['Dwell19'] * 1000, np.nan)
+df['B4D3_scaled'] = np.where(df['Dwell11'] != 0, df['D3Bin4']  / df['Dwell11'] * 1000, np.nan)
 df['B4'] = df[['B4D1_scaled', 'B4D2_scaled', 'B4D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B5
-df['B5D1_scaled'] = np.where(df['Dwell5']  != 0, df['D1Bin5']  / df['Dwell5'],  np.nan)
-df['B5D2_scaled'] = np.where(df['Dwell20'] != 0, df['D2Bin5']  / df['Dwell20'], np.nan)
-df['B5D3_scaled'] = np.where(df['Dwell12'] != 0, df['D3Bin5']  / df['Dwell12'], np.nan)
+df['B5D1_scaled'] = np.where(df['Dwell5']  != 0, df['D1Bin5']  / df['Dwell5'] * 1000,  np.nan)
+df['B5D2_scaled'] = np.where(df['Dwell20'] != 0, df['D2Bin5']  / df['Dwell20'] * 1000, np.nan)
+df['B5D3_scaled'] = np.where(df['Dwell12'] != 0, df['D3Bin5']  / df['Dwell12'] * 1000, np.nan)
 df['B5'] = df[['B5D1_scaled', 'B5D2_scaled', 'B5D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B6
-df['B6D1_scaled'] = np.where(df['Dwell6']  != 0, df['D1Bin6']  / df['Dwell6'],  np.nan)
-df['B6D2_scaled'] = np.where(df['Dwell21'] != 0, df['D2Bin6']  / df['Dwell21'], np.nan)
-df['B6D3_scaled'] = np.where(df['Dwell13'] != 0, df['D3Bin6']  / df['Dwell13'], np.nan)
+df['B6D1_scaled'] = np.where(df['Dwell6']  != 0, df['D1Bin6']  / df['Dwell6'] * 1000, np.nan)
+df['B6D2_scaled'] = np.where(df['Dwell21'] != 0, df['D2Bin6']  / df['Dwell21'] * 1000, np.nan)
+df['B6D3_scaled'] = np.where(df['Dwell13'] != 0, df['D3Bin6']  / df['Dwell13'] * 1000, np.nan)
 df['B6'] = df[['B6D1_scaled', 'B6D2_scaled', 'B6D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B7
-df['B7D1_scaled'] = np.where(df['Dwell7']  != 0, df['D1Bin7']  / df['Dwell7'],  np.nan)
-df['B7D2_scaled'] = np.where(df['Dwell22'] != 0, df['D2Bin7']  / df['Dwell22'], np.nan)
-df['B7D3_scaled'] = np.where(df['Dwell14'] != 0, df['D3Bin7']  / df['Dwell14'], np.nan)
+df['B7D1_scaled'] = np.where(df['Dwell7']  != 0, df['D1Bin7']  / df['Dwell7'] * 1000, np.nan)
+df['B7D2_scaled'] = np.where(df['Dwell22'] != 0, df['D2Bin7']  / df['Dwell22'] * 1000, np.nan)
+df['B7D3_scaled'] = np.where(df['Dwell14'] != 0, df['D3Bin7']  / df['Dwell14'] * 1000, np.nan)
 df['B7'] = df[['B7D1_scaled', 'B7D2_scaled', 'B7D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B8
-df['B8D1_scaled'] = np.where(df['Dwell8']  != 0, df['D1Bin8']  / df['Dwell8'],  np.nan)
-df['B8D2_scaled'] = np.where(df['Dwell23'] != 0, df['D2Bin8']  / df['Dwell23'], np.nan)
-df['B8D3_scaled'] = np.where(df['Dwell15'] != 0, df['D3Bin8']  / df['Dwell15'], np.nan)
+df['B8D1_scaled'] = np.where(df['Dwell8']  != 0, df['D1Bin8']  / df['Dwell8'] * 1000, np.nan)
+df['B8D2_scaled'] = np.where(df['Dwell23'] != 0, df['D2Bin8']  / df['Dwell23'] * 1000, np.nan)
+df['B8D3_scaled'] = np.where(df['Dwell15'] != 0, df['D3Bin8']  / df['Dwell15'] * 1000, np.nan)
 df['B8'] = df[['B8D1_scaled', 'B8D2_scaled', 'B8D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B9
-df['B9D1_scaled'] = np.where(df['Dwell9']  != 0, df['D1Bin9']  / df['Dwell9'],  np.nan)
-df['B9D2_scaled'] = np.where(df['Dwell24'] != 0, df['D2Bin9']  / df['Dwell24'], np.nan)
-df['B9D3_scaled'] = np.where(df['Dwell16'] != 0, df['D3Bin9']  / df['Dwell16'], np.nan)
+df['B9D1_scaled'] = np.where(df['Dwell9']  != 0, df['D1Bin9']  / df['Dwell9'] * 1000, np.nan)
+df['B9D2_scaled'] = np.where(df['Dwell24'] != 0, df['D2Bin9']  / df['Dwell24'] * 1000, np.nan)
+df['B9D3_scaled'] = np.where(df['Dwell16'] != 0, df['D3Bin9']  / df['Dwell16'] * 1000, np.nan)
 df['B9'] = df[['B9D1_scaled', 'B9D2_scaled', 'B9D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B10
-df['B10D1_scaled'] = np.where(df['Dwell10'] != 0, df['D1Bin10'] / df['Dwell10'], np.nan)
-df['B10D2_scaled'] = np.where(df['Dwell1']  != 0, df['D2Bin10'] / df['Dwell1'],  np.nan)
-df['B10D3_scaled'] = np.where(df['Dwell17'] != 0, df['D3Bin10'] / df['Dwell17'], np.nan)
+df['B10D1_scaled'] = np.where(df['Dwell10'] != 0, df['D1Bin10'] / df['Dwell10'] * 1000, np.nan)
+df['B10D2_scaled'] = np.where(df['Dwell1']  != 0, df['D2Bin10'] / df['Dwell1'] * 1000, np.nan)
+df['B10D3_scaled'] = np.where(df['Dwell17'] != 0, df['D3Bin10'] / df['Dwell17'] * 1000, np.nan)
 df['B10'] = df[['B10D1_scaled', 'B10D2_scaled', 'B10D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B11
-df['B11D1_scaled'] = np.where(df['Dwell11'] != 0, df['D1Bin11'] / df['Dwell11'], np.nan)
-df['B11D2_scaled'] = np.where(df['Dwell2']  != 0, df['D2Bin11'] / df['Dwell2'],  np.nan)
-df['B11D3_scaled'] = np.where(df['Dwell18'] != 0, df['D3Bin11'] / df['Dwell18'], np.nan)
+df['B11D1_scaled'] = np.where(df['Dwell11'] != 0, df['D1Bin11'] / df['Dwell11'] * 1000, np.nan)
+df['B11D2_scaled'] = np.where(df['Dwell2']  != 0, df['D2Bin11'] / df['Dwell2'] * 1000, np.nan)
+df['B11D3_scaled'] = np.where(df['Dwell18'] != 0, df['D3Bin11'] / df['Dwell18'] * 1000, np.nan)
 df['B11'] = df[['B11D1_scaled', 'B11D2_scaled', 'B11D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B12
-df['B12D1_scaled'] = np.where(df['Dwell12'] != 0, df['D1Bin12'] / df['Dwell12'], np.nan)
-df['B12D2_scaled'] = np.where(df['Dwell3']  != 0, df['D2Bin12'] / df['Dwell3'],  np.nan)
-df['B12D3_scaled'] = np.where(df['Dwell19'] != 0, df['D3Bin12'] / df['Dwell19'], np.nan)
+df['B12D1_scaled'] = np.where(df['Dwell12'] != 0, df['D1Bin12'] / df['Dwell12'] * 1000, np.nan)
+df['B12D2_scaled'] = np.where(df['Dwell3']  != 0, df['D2Bin12'] / df['Dwell3'] * 1000, np.nan)
+df['B12D3_scaled'] = np.where(df['Dwell19'] != 0, df['D3Bin12'] / df['Dwell19'] * 1000, np.nan)
 df['B12'] = df[['B12D1_scaled', 'B12D2_scaled', 'B12D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B13
-df['B13D1_scaled'] = np.where(df['Dwell13'] != 0, df['D1Bin13'] / df['Dwell13'], np.nan)
-df['B13D2_scaled'] = np.where(df['Dwell4']  != 0, df['D2Bin13'] / df['Dwell4'],  np.nan)
-df['B13D3_scaled'] = np.where(df['Dwell20'] != 0, df['D3Bin13'] / df['Dwell20'], np.nan)
+df['B13D1_scaled'] = np.where(df['Dwell13'] != 0, df['D1Bin13'] / df['Dwell13'] * 1000, np.nan)
+df['B13D2_scaled'] = np.where(df['Dwell4']  != 0, df['D2Bin13'] / df['Dwell4'] * 1000, np.nan)
+df['B13D3_scaled'] = np.where(df['Dwell20'] != 0, df['D3Bin13'] / df['Dwell20'] * 1000, np.nan)
 df['B13'] = df[['B13D1_scaled', 'B13D2_scaled', 'B13D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B14
-df['B14D1_scaled'] = np.where(df['Dwell14'] != 0, df['D1Bin14'] / df['Dwell14'], np.nan)
-df['B14D2_scaled'] = np.where(df['Dwell5']  != 0, df['D2Bin14'] / df['Dwell5'],  np.nan)
-df['B14D3_scaled'] = np.where(df['Dwell21'] != 0, df['D3Bin14'] / df['Dwell21'], np.nan)
+df['B14D1_scaled'] = np.where(df['Dwell14'] != 0, df['D1Bin14'] / df['Dwell14'] * 1000, np.nan)
+df['B14D2_scaled'] = np.where(df['Dwell5']  != 0, df['D2Bin14'] / df['Dwell5'] * 1000, np.nan)
+df['B14D3_scaled'] = np.where(df['Dwell21'] != 0, df['D3Bin14'] / df['Dwell21'] * 1000, np.nan)
 df['B14'] = df[['B14D1_scaled', 'B14D2_scaled', 'B14D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B15
-df['B15D1_scaled'] = np.where(df['Dwell15'] != 0, df['D1Bin15'] / df['Dwell15'], np.nan)
-df['B15D2_scaled'] = np.where(df['Dwell6']  != 0, df['D2Bin15'] / df['Dwell6'],  np.nan)
-df['B15D3_scaled'] = np.where(df['Dwell22'] != 0, df['D3Bin15'] / df['Dwell22'], np.nan)
+df['B15D1_scaled'] = np.where(df['Dwell15'] != 0, df['D1Bin15'] / df['Dwell15'] * 1000, np.nan)
+df['B15D2_scaled'] = np.where(df['Dwell6']  != 0, df['D2Bin15'] / df['Dwell6'] * 1000, np.nan)
+df['B15D3_scaled'] = np.where(df['Dwell22'] != 0, df['D3Bin15'] / df['Dwell22'] * 1000, np.nan)
 df['B15'] = df[['B15D1_scaled', 'B15D2_scaled', 'B15D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B16
-df['B16D1_scaled'] = np.where(df['Dwell16'] != 0, df['D1Bin16'] / df['Dwell16'], np.nan)
-df['B16D2_scaled'] = np.where(df['Dwell7']  != 0, df['D2Bin16'] / df['Dwell7'],  np.nan)
-df['B16D3_scaled'] = np.where(df['Dwell23'] != 0, df['D3Bin16'] / df['Dwell23'], np.nan)
+df['B16D1_scaled'] = np.where(df['Dwell16'] != 0, df['D1Bin16'] / df['Dwell16'] * 1000, np.nan)
+df['B16D2_scaled'] = np.where(df['Dwell7']  != 0, df['D2Bin16'] / df['Dwell7'] * 1000, np.nan)
+df['B16D3_scaled'] = np.where(df['Dwell23'] != 0, df['D3Bin16'] / df['Dwell23'] * 1000, np.nan)
 df['B16'] = df[['B16D1_scaled', 'B16D2_scaled', 'B16D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B17
-df['B17D1_scaled'] = np.where(df['Dwell17'] != 0, df['D1Bin17'] / df['Dwell17'], np.nan)
-df['B17D2_scaled'] = np.where(df['Dwell8']  != 0, df['D2Bin17'] / df['Dwell8'],  np.nan)
-df['B17D3_scaled'] = np.where(df['Dwell24'] != 0, df['D3Bin17'] / df['Dwell24'],  np.nan)
+df['B17D1_scaled'] = np.where(df['Dwell17'] != 0, df['D1Bin17'] / df['Dwell17'] * 1000, np.nan)
+df['B17D2_scaled'] = np.where(df['Dwell8']  != 0, df['D2Bin17'] / df['Dwell8'] * 1000, np.nan)
+df['B17D3_scaled'] = np.where(df['Dwell24'] != 0, df['D3Bin17'] / df['Dwell24'] * 1000, np.nan)
 df['B17'] = df[['B17D1_scaled', 'B17D2_scaled', 'B17D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B18
-df['B18D1_scaled'] = np.where(df['Dwell18'] != 0, df['D1Bin18'] / df['Dwell18'], np.nan)
-df['B18D2_scaled'] = np.where(df['Dwell9']  != 0, df['D2Bin18'] / df['Dwell9'], np.nan)
-df['B18D3_scaled'] = np.where(df['Dwell1']  != 0, df['D3Bin18'] / df['Dwell1'],  np.nan)
+df['B18D1_scaled'] = np.where(df['Dwell18'] != 0, df['D1Bin18'] / df['Dwell18'] * 1000, np.nan)
+df['B18D2_scaled'] = np.where(df['Dwell9']  != 0, df['D2Bin18'] / df['Dwell9'] * 1000, np.nan)
+df['B18D3_scaled'] = np.where(df['Dwell1']  != 0, df['D3Bin18'] / df['Dwell1'] * 1000, np.nan)
 df['B18'] = df[['B18D1_scaled', 'B18D2_scaled', 'B18D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B19
-df['B19D1_scaled'] = np.where(df['Dwell19'] != 0, df['D1Bin19'] / df['Dwell19'], np.nan)
-df['B19D2_scaled'] = np.where(df['Dwell10'] != 0, df['D2Bin19'] / df['Dwell10'], np.nan)
-df['B19D3_scaled'] = np.where(df['Dwell2']  != 0, df['D3Bin19'] / df['Dwell2'],  np.nan)
+df['B19D1_scaled'] = np.where(df['Dwell19'] != 0, df['D1Bin19'] / df['Dwell19'] * 1000, np.nan)
+df['B19D2_scaled'] = np.where(df['Dwell10'] != 0, df['D2Bin19'] / df['Dwell10'] * 1000, np.nan)
+df['B19D3_scaled'] = np.where(df['Dwell2']  != 0, df['D3Bin19'] / df['Dwell2'] * 1000, np.nan)
 df['B19'] = df[['B19D1_scaled', 'B19D2_scaled', 'B19D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B20
-df['B20D1_scaled'] = np.where(df['Dwell20'] != 0, df['D1Bin20'] / df['Dwell20'], np.nan)
-df['B20D2_scaled'] = np.where(df['Dwell11'] != 0, df['D2Bin20'] / df['Dwell11'], np.nan)
-df['B20D3_scaled'] = np.where(df['Dwell3']  != 0, df['D3Bin20'] / df['Dwell3'],  np.nan)
+df['B20D1_scaled'] = np.where(df['Dwell20'] != 0, df['D1Bin20'] / df['Dwell20'] * 1000, np.nan)
+df['B20D2_scaled'] = np.where(df['Dwell11'] != 0, df['D2Bin20'] / df['Dwell11'] * 1000, np.nan)
+df['B20D3_scaled'] = np.where(df['Dwell3']  != 0, df['D3Bin20'] / df['Dwell3'] * 1000, np.nan)
 df['B20'] = df[['B20D1_scaled', 'B20D2_scaled', 'B20D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B21
-df['B21D1_scaled'] = np.where(df['Dwell21'] != 0, df['D1Bin21'] / df['Dwell21'], np.nan)
-df['B21D2_scaled'] = np.where(df['Dwell12'] != 0, df['D2Bin21'] / df['Dwell12'], np.nan)
-df['B21D3_scaled'] = np.where(df['Dwell4']  != 0, df['D3Bin21'] / df['Dwell4'],  np.nan)
+df['B21D1_scaled'] = np.where(df['Dwell21'] != 0, df['D1Bin21'] / df['Dwell21'] * 1000, np.nan)
+df['B21D2_scaled'] = np.where(df['Dwell12'] != 0, df['D2Bin21'] / df['Dwell12'] * 1000, np.nan)
+df['B21D3_scaled'] = np.where(df['Dwell4']  != 0, df['D3Bin21'] / df['Dwell4'] * 1000, np.nan)
 df['B21'] = df[['B21D1_scaled', 'B21D2_scaled', 'B21D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B22
-df['B22D1_scaled'] = np.where(df['Dwell22'] != 0, df['D1Bin22'] / df['Dwell22'], np.nan)
-df['B22D2_scaled'] = np.where(df['Dwell13'] != 0, df['D2Bin22'] / df['Dwell13'], np.nan)
-df['B22D3_scaled'] = np.where(df['Dwell5']  != 0, df['D3Bin22'] / df['Dwell5'],  np.nan)
+df['B22D1_scaled'] = np.where(df['Dwell22'] != 0, df['D1Bin22'] / df['Dwell22'] * 1000, np.nan)
+df['B22D2_scaled'] = np.where(df['Dwell13'] != 0, df['D2Bin22'] / df['Dwell13'] * 1000, np.nan)
+df['B22D3_scaled'] = np.where(df['Dwell5']  != 0, df['D3Bin22'] / df['Dwell5'] * 1000, np.nan)
 df['B22'] = df[['B22D1_scaled', 'B22D2_scaled', 'B22D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B23
-df['B23D1_scaled'] = np.where(df['Dwell23'] != 0, df['D1Bin23'] / df['Dwell23'], np.nan)
-df['B23D2_scaled'] = np.where(df['Dwell14'] != 0, df['D2Bin23'] / df['Dwell14'], np.nan)
-df['B23D3_scaled'] = np.where(df['Dwell6']  != 0, df['D3Bin23'] / df['Dwell6'],  np.nan)
+df['B23D1_scaled'] = np.where(df['Dwell23'] != 0, df['D1Bin23'] / df['Dwell23'] * 1000, np.nan)
+df['B23D2_scaled'] = np.where(df['Dwell14'] != 0, df['D2Bin23'] / df['Dwell14'] * 1000, np.nan)
+df['B23D3_scaled'] = np.where(df['Dwell6']  != 0, df['D3Bin23'] / df['Dwell6'] * 1000, np.nan)
 df['B23'] = df[['B23D1_scaled', 'B23D2_scaled', 'B23D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 # B24
-df['B24D1_scaled'] = np.where(df['Dwell24'] != 0, df['D1Bin24'] / df['Dwell24'], np.nan)
-df['B24D2_scaled'] = np.where(df['Dwell15'] != 0, df['D2Bin24'] / df['Dwell15'], np.nan)
-df['B24D3_scaled'] = np.where(df['Dwell7']  != 0, df['D3Bin24'] / df['Dwell7'],  np.nan)
+df['B24D1_scaled'] = np.where(df['Dwell24'] != 0, df['D1Bin24'] / df['Dwell24'] * 1000, np.nan)
+df['B24D2_scaled'] = np.where(df['Dwell15'] != 0, df['D2Bin24'] / df['Dwell15'] * 1000, np.nan)
+df['B24D3_scaled'] = np.where(df['Dwell7']  != 0, df['D3Bin24'] / df['Dwell7'] * 1000, np.nan)
 df['B24'] = df[['B24D1_scaled', 'B24D2_scaled', 'B24D3_scaled']].sum(axis=1, skipna=True, min_count=1)
 
 
@@ -337,6 +338,22 @@ app.layout = html.Div([
             labelStyle={'display': 'inline-block', 'margin-right': '16px'}
         )
     ], style={'margin-bottom': '20px', 'margin-top': '10px', 'display': 'flex', 'alignItems': 'center'}),
+
+
+
+html.Div([
+    html.Label("Select Detectors to be included in Image:"),
+    dcc.Checklist(
+        id='detector-select',
+        options=[
+            {'label': 'D1', 'value': 'D1'},
+            {'label': 'D2', 'value': 'D2'},
+            {'label': 'D3', 'value': 'D3'}
+        ],
+        value=['D1', 'D2', 'D3'],  # all checked by default
+        labelStyle={'display': 'inline-block', 'margin-right': '20px'}
+    )
+], style={'margin-bottom': '18px', 'margin-top': '10px'}),
 
 
     # --- Field-only plots ---
@@ -669,65 +686,94 @@ def update_max_record(contents, filename):
     Input('detector-tool-switch', 'value'),
     Input('env_corr', 'value'),
     Input('AZG_factor', 'value'),
-    Input('heatmap-shift-mode', 'value')
+    Input('heatmap-shift-mode', 'value'),
+    Input('detector-select', 'value')
 )
-def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered, detector_tool_value, env_corr_value, AZG_factor_value, shift_mode_value):
+def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filtered, detector_tool_value, env_corr_value, AZG_factor_value, shift_mode_value, selected_detectors):
     '''
-    Builds the shifted heatmap/image, where each row's B columns 
-    are circularly shifted left by BinRefAtStart.
+    Builds the shifted heatmap/image, using the selected detectors,
+    and where each row's B columns are circularly shifted left by BinRefAtStart.
     '''
-    # Determine number of detectors (2 or 3) based on selector input
+    if not selected_detectors:  # Nothing selected: show empty plot.
+        return go.Figure()
+
+    # Copy/scale DataFrame for this view
     detectors = 2 if detector_tool_value == '2det' else 3
-    
-    # Build the B column list
-    b_cols = [f'B{i}' for i in range(1, 25) if f'B{i}' in df.columns]
     dff = df.copy()
-    
-    # Recompute B columns using detector scaling
     dff = apply_detector_scaling(dff, detectors, env_corr_value, AZG_factor_value)
 
-    
-    # Apply RPM filter to the data if needed
+    # RPM filter if needed
     if rpm_filtered and 'RPM' in dff.columns:
         dff = dff[dff['RPM'] >= 30]
-        
+
     if start_rec is None or end_rec is None or start_rec > end_rec:
         return go.Figure()
     df_slice = dff[(dff['RecordNumber'] >= start_rec) & (dff['RecordNumber'] <= end_rec)].copy()
     if df_slice.empty:
         return go.Figure()
-    
-    # For each row, perform a circular shift by BinRefAtStart
-    # Apply shift or leave raw
-    shifted_b_matrix = []
+
+
+    detectors = []
+    if 'D1' in selected_detectors:
+        detectors.append('D1')
+    if 'D2' in selected_detectors:
+        detectors.append('D2')
+    if 'D3' in selected_detectors:
+        detectors.append('D3')
+
+    # Build the list of column names accordingly (used only for checking column existence, not for actual data matrix)
+    b_cols = []
+    for i in range(1, 25):
+        for d in detectors:
+            b_cols.append(f'B{i}{d}_scaled')
+
+
+
+
+    # For each record, sum the bins for selected detectors
+    z_matrix = []
     for _, row in df_slice.iterrows():
-        b_values = row[b_cols].values
-        if shift_mode_value == 'shift':
-            shift = int(row['BinRefAtStart']) % 24 if not pd.isnull(row['BinRefAtStart']) else 0
-            b_shifted = np.roll(b_values, -shift)
-            shifted_b_matrix.append(b_shifted)
-        else:
-            shifted_b_matrix.append(b_values)
-        
-    z_data = np.array(shifted_b_matrix, dtype=float)
+        row_bins = []
+        for i in range(1, 25):
+            values = []
+            if 'D1' in selected_detectors:
+                values.append(row.get(f'B{i}D1_scaled', np.nan))
+            if 'D2' in selected_detectors:
+                values.append(row.get(f'B{i}D2_scaled', np.nan))
+            if 'D3' in selected_detectors:
+                values.append(row.get(f'B{i}D3_scaled', np.nan))
+            # sum with min_count=1 for true NaN if all values are nan
+            if values:
+                s = pd.Series(values).sum(skipna=True, min_count=1)
+            else:
+                s = np.nan
+            row_bins.append(s)
+        z_matrix.append(row_bins)
+    z_data = np.array(z_matrix, dtype=float)
+
     y_labels = [
         f"{int(recnum)} | {ts.strftime('%Y-%m-%d %H:%M:%S') if not pd.isnull(ts) else ''}"
         for recnum, ts in zip(df_slice['RecordNumber'], df_slice['TimeStamp'])
     ] if 'RecordNumber' in df_slice.columns and 'TimeStamp' in df_slice.columns else df_slice.index.astype(str)
-    x_labels = b_cols
+    x_labels = [f'B{i}' for i in range(1, 25)]
+
+    # Step 4: Circularly shift by BinRefAtStart, if required
+    if shift_mode_value == 'shift' and 'BinRefAtStart' in df_slice.columns:
+        for idx, row in enumerate(df_slice.itertuples()):
+            shift = int(getattr(row, 'BinRefAtStart')) % 24 if not pd.isnull(getattr(row, 'BinRefAtStart')) else 0
+            z_data[idx] = np.roll(z_data[idx], -shift)
+
     all_b_vals = z_data.flatten()
-    
-    
     nonzero_vals = all_b_vals[(all_b_vals != 0) & ~np.isnan(all_b_vals)]
     if nonzero_vals.size > 0:
         auto_min_b = np.min(nonzero_vals)
         auto_max_b = np.max(nonzero_vals)
     else:
         auto_min_b, auto_max_b = 0, 1 # fallback for all-zero/NaN
-        
+
     min_b = manual_min if manual_min is not None else auto_min_b
     max_b = manual_max if manual_max is not None else auto_max_b
-    
+
     colorscale = [
         [0.0, 'white'],
         [0.25, 'yellow'],
@@ -735,14 +781,7 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         [0.75, 'red'],
         [1.0, 'black']
     ]
-    
-    # Build the x_labels for the x-axis
-    if shift_mode_value == 'shift':
-        x_labels = b_cols
-    else:
-        x_labels = b_cols
 
-        
     fig = go.Figure(data=go.Heatmap(
         z=z_data,
         x=x_labels,
@@ -760,20 +799,18 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         yaxis_autorange='reversed',
         margin=dict(l=60, r=40, t=40, b=60)
     )
-    
     if shift_mode_value == 'shift':
         fig.update_xaxes(
             tickvals=[-0.5, 5.5, 11.5, 17.5, 23.5],
             ticktext=["Up", "Right", "Down", "Left", "Up"],
             range=[-0.5, 23.5]
-    )
+        )
     else:
         fig.update_xaxes(
             tickvals=None,
             ticktext=None,
             range=[-0.5, 23.5]
-    )
-
+        )
     return fig
 
 
