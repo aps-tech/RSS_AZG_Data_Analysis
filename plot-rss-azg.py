@@ -10,6 +10,9 @@ import io
 import base64
 import dash_bootstrap_components as dbc
 
+# Carousel image filenames
+slide_images = [f"/assets/Slide{i}.jpg" for i in range(1, 25)]
+
 
 # --------- Data Loading ---------
 def load_data(filepath):
@@ -379,6 +382,16 @@ app.layout = html.Div([
         )
     ], style={'margin-bottom': '20px', 'margin-top': '10px', 'display': 'flex', 'alignItems': 'center'}),
 
+
+
+html.Div([
+    html.Img(id="carousel-image", src=slide_images[0], style={"width": "60%", "display": "block", "margin": "0 auto"}),
+    html.Div([
+        html.Button("Previous", id="carousel-prev", n_clicks=0, style={"margin-right": "20px"}),
+        html.Button("Next", id="carousel-next", n_clicks=0),
+    ], style={"textAlign": "center", "marginTop": "10px"}),
+    dcc.Store(id='carousel-index', data=0)
+], style={"margin-bottom": "24px"}),
 
 
 # --- Field-only plots ---
@@ -936,6 +949,27 @@ def show_print_msg(n):
     if n and n > 0:
         return "This section is still being implemented"
     return ""
+
+@app.callback(
+    Output("carousel-image", "src"),
+    Output("carousel-index", "data"),
+    Input("carousel-prev", "n_clicks"),
+    Input("carousel-next", "n_clicks"),
+    State("carousel-index", "data"),
+)
+def update_carousel(prev_clicks, next_clicks, idx):
+    n = len(slide_images)
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return slide_images[0], 0
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    if button_id == "carousel-prev":
+        idx = (idx - 1) % n
+    elif button_id == "carousel-next":
+        idx = (idx + 1) % n
+    return slide_images[idx], idx
+
+
 
 
 # --- Standard Dash main entry point ---
