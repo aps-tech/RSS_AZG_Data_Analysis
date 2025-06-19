@@ -40,7 +40,7 @@ def apply_detector_scaling(dff, detectors=2, env_corr=5.89, AZG_factor=0.15):
     for i in range(1, 25):
         b_col = f'B{i}'
         if b_col in dff.columns:
-            dff[b_col] = dff[b_col] * 1000 * 3 / detectors * env_corr * AZG_factor
+            dff[b_col] = dff[b_col] * 3 / detectors * env_corr * AZG_factor
     return dff
     #not being used anymore since detector-select rewrite
 
@@ -315,6 +315,54 @@ app.layout = html.Div([
     # --- Heatmap/image by URDLR (Shifted by BinRefAtStart) ---
     dcc.Graph(id='b-heatmap-shifted'),
     
+    
+        html.Div([
+        html.Label(
+            "Select Detectors to be included in Image:",
+            style={
+                'fontSize': '1.4em',
+                'fontWeight': 'bold',
+                'margin-bottom': '6px',
+                'display': 'block',
+                'textAlign': 'center'
+            }
+        ),
+        dcc.Checklist(
+            id='detector-select',
+            options=[
+                {'label': 'D1', 'value': 'D1'},
+                {'label': 'D2', 'value': 'D2'},
+                {'label': 'D3', 'value': 'D3'}
+            ],
+            value=['D1', 'D2', 'D3'],
+            labelStyle={
+                'display': 'inline-block',
+                'margin-right': '32px',
+                'fontSize': '1.25em',
+                'transform': 'scale(1.4)',
+                'verticalAlign': 'middle',
+            },
+            inputStyle={
+                'marginRight': '10px',
+                'width': '22px',
+                'height': '22px',
+                'verticalAlign': 'middle',
+            },
+            style={
+                'justifyContent': 'center',    # centers the checkboxes
+                'display': 'flex',
+                'gap': '20px'
+            }
+        )
+    ], style={
+        'margin-bottom': '24px',
+        'margin-top': '14px',
+        'display': 'flex',
+        'flexDirection': 'column',
+        'alignItems': 'center'   # centers the children of this Div
+    }),
+    
+    
     # --- RPM filtering controls (applied only to heatmaps) to hide data at connections/overnight/not drilling ---
     html.Div([
         html.Button("Hide data below 30 RPM in heatmap", id='hide-below-30rpm', n_clicks=0, style={'margin-right': '10px'}),
@@ -332,20 +380,6 @@ app.layout = html.Div([
     ], style={'margin-bottom': '20px', 'margin-top': '10px', 'display': 'flex', 'alignItems': 'center'}),
 
 
-
-html.Div([
-    html.Label("Select Detectors to be included in Image:"),
-    dcc.Checklist(
-        id='detector-select',
-        options=[
-            {'label': 'D1', 'value': 'D1'},
-            {'label': 'D2', 'value': 'D2'},
-            {'label': 'D3', 'value': 'D3'}
-        ],
-        value=['D1', 'D2', 'D3'],  # all checked by default
-        labelStyle={'display': 'inline-block', 'margin-right': '20px'}
-    )
-], style={'margin-bottom': '18px', 'margin-top': '10px'}),
 
 # --- Field-only plots ---
 # --- Field-only plots ---
@@ -517,7 +551,7 @@ html.Div([
         html.Hr(),
         dcc.Upload(
             id='upload-data',
-            children=html.Button('Select Different Memory Data Source Text File'),
+            children=html.Button('Select Different Memory Data Source Text File - not implemented yet - save new file as Data_example.txt for now'),
             accept='.txt,.csv,.tsv,.dat,text/plain',
             multiple=False,
             style={'margin-top': '40px'}
@@ -557,19 +591,19 @@ def update_manual_scale(set_clicks, reset_clicks, manual_min, manual_max):
     Output('time-series-chart', 'figure'),
     Input('column-dropdown', 'value'),
     Input('start-record', 'value'),
-    Input('end-record', 'value'),
-    Input('detector-tool-switch', 'value'),
-    Input('AZG_factor', 'value'),
-    Input('env_corr', 'value')
+    Input('end-record', 'value')
+#    Input('detector-tool-switch', 'value'),
+#    Input('AZG_factor', 'value'),
+#    Input('env_corr', 'value')
 )
-def update_chart(selected_col, start_rec, end_rec, detector_tool_value, AZG_factor_value, env_corr_value):
+def update_chart(selected_col, start_rec, end_rec):
     """
     Draws a time series plot for the selected column.
     This plot is not filtered by RPM—shows all records in the user-selected range.
     """
-    detectors = 2 if detector_tool_value == '2det' else 3
+#    detectors = 2 if detector_tool_value == '2det' else 3
     dff = df.copy()
-    dff = apply_detector_scaling(dff, detectors, env_corr_value, AZG_factor_value)
+#    dff = apply_detector_scaling(dff, detectors, env_corr_value, AZG_factor_value)
 
     if not selected_col or selected_col not in dff.columns:
         return {}
@@ -590,12 +624,12 @@ def update_chart(selected_col, start_rec, end_rec, detector_tool_value, AZG_fact
     Output('data-table', 'data'),
     Input('column-toggle', 'value'),
     Input('start-record', 'value'),
-    Input('end-record', 'value'),
-    Input('detector-tool-switch', 'value'),
-    Input('AZG_factor', 'value'),
-    Input('env_corr', 'value')
+    Input('end-record', 'value')
+#    Input('detector-tool-switch', 'value'),
+#    Input('AZG_factor', 'value'),
+#    Input('env_corr', 'value')
 )
-def update_table_columns_and_data(visible_cols, start_rec, end_rec, detector_tool_value, env_corr, AZG_factor):
+def update_table_columns_and_data(visible_cols, start_rec, end_rec):
     """
     Updates the columns and data in the main table.
     Applies column toggling, record range filtering, and detector scaling.
@@ -603,13 +637,13 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec, detector_too
     if not visible_cols:
         return [], []
     # Determine number of detectors (2 or 3) based on selector input
-    detectors = 2 if detector_tool_value == '2det' else 3
+#    detectors = 2 if detector_tool_value == '2det' else 3
 
     # Copy the DataFrame for safe modifications
     dff = df.copy()
 
     # Scale B columns for the detector tool
-    dff = apply_detector_scaling(dff, detectors, env_corr, AZG_factor)
+#    dff = apply_detector_scaling(dff, detectors, env_corr, AZG_factor)
 
 
     # Filter dataframe to selected record range by RecordNumber
@@ -635,27 +669,27 @@ def update_table_columns_and_data(visible_cols, start_rec, end_rec, detector_too
 
 
 # --- Upload data file, replace DataFrame with uploaded file ---
-@app.callback(
-    Output('upload-status', 'children'),
-    Input('upload-data', 'contents'),
-    State('upload-data', 'filename')
-)
-def update_data_source(contents, filename):
-    """
-    Handles the file upload. Replaces the DataFrame with the uploaded file.
-    """
-    if contents is None:
-        return ""
-    content_type, content_string = contents.split(',')
-    decoded = base64.b64decode(content_string)
-    try:
-        # Try loading as a text file (CSV/TSV or whitespace delimited)
-        df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', sep=None, engine='python')
-        global df
-        df = df_new
-        return f"Data source '{filename}' loaded successfully! Please adjust display controls if needed."
-    except Exception as e:
-        return f"Error loading file '{filename}': {e}"
+#@app.callback(
+#    Output('upload-status', 'children'),
+#    Input('upload-data', 'contents'),
+#    State('upload-data', 'filename')
+#)
+#def update_data_source(contents, filename):
+#    """
+#    Handles the file upload. Replaces the DataFrame with the uploaded file.
+#    """
+#    if contents is None:
+#        return ""
+#    content_type, content_string = contents.split(',')
+#    decoded = base64.b64decode(content_string)
+#    try:
+#        # Try loading as a text file (CSV/TSV or whitespace delimited)
+#        df_new = pd.read_csv(io.StringIO(decoded.decode('utf-8')), comment='#', sep=None, engine='python')
+#        global df
+#        df = df_new
+#        return f"Data source '{filename}' loaded successfully! Please adjust display controls if needed."
+#    except Exception as e:
+#        return f"Error loading file '{filename}': {e}"
 
 # --- Set RPM filter flag for heatmap filtering (True/False) ---
 @app.callback(
@@ -728,9 +762,9 @@ def update_shifted_heatmap(start_rec, end_rec, manual_min, manual_max, rpm_filte
         return go.Figure()
 
     # Copy/scale DataFrame for this view
-    detectors = 2 if detector_tool_value == '2det' else 3
+#    detectors = 2 if detector_tool_value == '2det' else 3
     dff = df.copy()
-    dff = apply_detector_scaling(dff, detectors, env_corr_value, AZG_factor_value)
+#    dff = apply_detector_scaling(dff, detectors, env_corr_value, AZG_factor_value)
 
     # RPM filter if needed
     if rpm_filtered and 'RPM' in dff.columns:
