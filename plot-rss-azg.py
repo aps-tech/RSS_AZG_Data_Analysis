@@ -8,6 +8,8 @@ import plotly.graph_objs as go
 from dash.dash_table.Format import Format, Scheme
 import io
 import base64
+import dash_bootstrap_components as dbc
+
 
 # --------- Data Loading ---------
 def load_data(filepath):
@@ -45,7 +47,7 @@ def apply_detector_scaling(dff, detectors=2, env_corr=5.89, AZG_factor=0.15):
 
 
 # --------- Initialize the Dash App ---------
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
 
 # --------- Load Initial Data ---------
 df = load_data("Data_example.txt")
@@ -303,19 +305,9 @@ app.layout = html.Div([
         html.Button("Set gamma scale to 0-200", id='set-b-scale', n_clicks=0, style={'margin-left': '20px', 'margin-right': '10px'}),
         html.Button("Auto Color Range (auto-updates with record range change)", id='reset-b-scale', n_clicks=0)
     ], style={'margin-bottom': '20px', 'display': 'flex', 'gap': '20px'}),
-    #------2/3 detector selector to use in bin calculation-----------------
-    html.Div([
-    html.Label("Select tool configuration:", style={'margin-right': '16px'}),
-    dcc.RadioItems(
-        id='detector-tool-switch',
-        options=[
-            {'label': '2 Detector tool (RSS-AZG)', 'value': '2det'},
-            {'label': '3 Detector tool (AZG)', 'value': '3det'}
-        ],
-        value='3det',
-        labelStyle={'display': 'inline-block', 'margin-right': '32px'}
-    )
-], style={'margin-bottom': '16px', 'margin-top': '16px'}),
+
+
+   
 
     
 
@@ -355,82 +347,120 @@ html.Div([
     )
 ], style={'margin-bottom': '18px', 'margin-top': '10px'}),
 
+# --- Field-only plots ---
+# --- Field-only plots ---
+html.Div([
+    dbc.Button(
+        "Show Field-Print-Only/Test Facility Plot Controls",
+        id="collapse-fieldplots-btn",
+        color="primary",
+        className="mb-2",
+        n_clicks=0,
+        style={"margin-bottom": "8px"}
+    ),
+    dbc.Collapse(
+        id="collapse-fieldplots",
+        is_open=False,  # Collapsed by default!
+        children=[
+            html.Div([
+                html.H4(
+                    "Test facility plot generation, for field logs only, NOT for final logs. No guarantee of accuracy.",
+                    style={'margin-bottom': '12px'}
+                ),
+                # Depth Range Row
+                html.Div([
+                    html.Label("Start Depth:", style={'margin-right': '8px'}),
+                    dcc.Input(id='start-depth', type='number', value=0, style={'margin-right': '24px', 'width': '100px'}),
+                    html.Label("End Depth:", style={'margin-right': '8px'}),
+                    dcc.Input(id='end-depth', type='number', value=100, style={'margin-right': '24px', 'width': '100px'}),
+                    html.Button("Apply EasyDepth range to visible plot only", id='apply-depth', n_clicks=0, style={'margin-left': '12px'}),
+                ], style={'margin-bottom': '12px', 'display': 'flex', 'alignItems': 'center'}),
+                html.Div(id='depth-apply-status', style={'color': '#00528C', 'margin-bottom': '12px'}),
 
-    # --- Field-only plots ---
-    html.Div([
-        html.H4("Test facility plot generation, for field logs only, NOT for final logs. No guarantee of accuracy.", style={'margin-bottom': '12px'}),
-        html.Div([
-            html.Label("Start Depth:"),
-            dcc.Input(id='start-depth', type='number', value=0, style={'margin-right': '16px', 'width': '100px'}),
-            html.Label("End Depth:"),
-            dcc.Input(id='end-depth', type='number', value=100, style={'margin-right': '16px', 'width': '100px'}),
-            html.Button("Apply EasyDepth", id='apply-depth', n_clicks=0, style={'margin-left': '12px'}),
-        ], style={'margin-bottom': '8px'}),
-        html.Div(id='depth-apply-status', style={'color': '#00528C'}),
-        
-        
-        #---Real time-depth file load button-----
-        #############DO NOT FORGET TO IMPLEMENT CALLBACK#######################
-        html.Div([
-        html.Span("Apply real Time-Depth file", style={'margin-right': '16px'}),
-        dcc.Upload(
-            id='upload-timedepth',
-            children=html.Button('Load Time Depth file'),
-            accept='.txt,.csv,.tsv,.dat,text/plain',
-            multiple=False,
-            style={'display': 'inline-block'}
-        ),
-        
-        html.Div([
-            html.Label("Environmental Correction:"), 
-            dcc.Input(
-                id='env_corr',
-                type='number',
-                value=5.89,
-                style={'margin-left': '8px', 'width': '150px'}
-            ),
-        ], style={'margin-bottom': '8px'}),
+                # Upload row
+                html.Div([
+                    html.Span("Apply real Time-Depth file", style={'margin-right': '16px'}),
+                    dcc.Upload(
+                        id='upload-timedepth',
+                        children=html.Button('Load Time Depth file'),
+                        accept='.txt,.csv,.tsv,.dat,text/plain',
+                        multiple=False,
+                        style={'display': 'inline-block'}
+                    ),
+                ], style={'display': 'flex', 'alignItems': 'center', 'margin-bottom': '10px'}),
 
+                # Environmental Correction Row
+                html.Div([
+                    html.Label("Environmental Correction:", style={'margin-right': '8px'}),
+                    dcc.Input(
+                        id='env_corr',
+                        type='number',
+                        value=5.89,
+                        style={'width': '150px'}
+                    ),
+                ], style={'margin-bottom': '12px', 'display': 'flex', 'alignItems': 'center'}),
 
-        html.Label("Detector 1 calibration:"), #not used yet
-        dcc.Input(
-            id='det1-cal',
-            type='number',
-            value=1,
-            style={'margin-right': '16px', 'width': '150px'}
-        ),
+                # Detector Calibrations Row
+                html.Div([
+                    html.Label("Detector 1 calibration:", style={'margin-right': '8px'}),
+                    dcc.Input(
+                        id='det1-cal',
+                        type='number',
+                        value=1,
+                        style={'margin-right': '24px', 'width': '100px'}
+                    ),
+                    html.Label("Detector 2 calibration:", style={'margin-right': '8px'}),
+                    dcc.Input(
+                        id='det2-cal',
+                        type='number',
+                        value=1,
+                        style={'margin-right': '24px', 'width': '100px'}
+                    ),
+                    html.Label("Detector 3 calibration:", style={'margin-right': '8px'}),
+                    dcc.Input(
+                        id='det3-cal',
+                        type='number',
+                        value=1,
+                        style={'width': '100px'}
+                    ),
+                ], style={'margin-bottom': '12px', 'display': 'flex', 'alignItems': 'center'}),
 
-        html.Label("Detector 2 calibration:"), #not used yet
-        dcc.Input(
-            id='det2-cal',
-            type='number',
-            value=1,
-            style={'margin-right': '16px', 'width': '150px'}
-        ),
+                # AZG Factor Row
+                html.Div([
+                    html.Label("AZG to standalone factor", style={'margin-right': '8px'}),
+                    dcc.Input(
+                        id='AZG_factor',
+                        type='number',
+                        value=0.15,
+                        style={'width': '150px'}
+                    ),
+                ], style={'margin-bottom': '16px', 'display': 'flex', 'alignItems': 'center'}),
 
-        html.Label("Detector 3 calibration:"), #not used yet
-        dcc.Input(
-            id='det3-cal',
-            type='number',
-            value=1,
-            style={'margin-right': '16px', 'width': '150px'}
-        ),
+                # Tool Configuration Row
+                html.Div([
+                    html.Label("Select tool configuration:", style={'margin-right': '16px'}),
+                    dcc.RadioItems(
+                        id='detector-tool-switch',
+                        options=[
+                            {'label': '2 Detector tool (RSS-AZG)', 'value': '2det'},
+                            {'label': '3 Detector tool (AZG)', 'value': '3det'}
+                        ],
+                        value='2det',
+                        labelStyle={'display': 'inline-block', 'margin-right': '32px'}
+                    )
+                ], style={'margin-bottom': '0', 'margin-top': '8px', 'display': 'flex', 'alignItems': 'center'}),
 
-        html.Div([
-            html.Label("AZG to standalone factor"), 
-            dcc.Input(
-                id='AZG_factor',
-                type='number',
-                value=0.15,
-                style={'margin-left': '8px', 'width': '150px'}
-            ),
-        ], style={'margin-bottom': '8px'}),
-        
-        ], style={'display': 'flex', 'alignItems': 'center', 'margin-top': '10px', 'margin-bottom': '8px'}),
-
-        
-    ], style={'border': '2px solid #C4C4C4', 'border-radius': '12px', 'padding': '16px', 'margin': '30px 0'}),
-
+                # Placeholder Print Button and Message
+                html.Div([
+                    html.Button("Print", id="print-btn", n_clicks=0, style={'width': '120px'}),
+                    html.Div(id="print-placeholder-msg", style={'margin-top': '10px', 'color': '#d9534f', 'fontWeight': 'bold'})
+                ], style={'margin-top': '20px', 'display': 'flex', 'flexDirection': 'column', 'alignItems': 'flex-start'}),
+            ],
+            style={'border': '2px solid #C4C4C4', 'border-radius': '12px', 'padding': '16px', 'margin': '30px 0'}
+            )
+        ]
+    ),
+]),
 
 
     # --- Time series chart and column selector ---
@@ -850,6 +880,28 @@ def apply_depths(n_clicks, start_depth, end_depth, start_rec, end_rec, rpm_filte
     # Write to the relevant records in the original df
     df.loc[df_slice.index, 'Depth'] = depth_values
     return f"Depth column applied to {n} records (from {start_depth} to {end_depth} feet)."
+
+
+@app.callback(
+    Output('collapse-fieldplots', 'is_open'),
+    Input('collapse-fieldplots-btn', 'n_clicks'),
+    State('collapse-fieldplots', 'is_open')
+)
+def toggle_fieldplots(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("print-placeholder-msg", "children"),
+    Input("print-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def show_print_msg(n):
+    if n and n > 0:
+        return "This section is still being implemented"
+    return ""
 
 
 # --- Standard Dash main entry point ---
