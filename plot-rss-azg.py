@@ -9,9 +9,41 @@ from dash.dash_table.Format import Format, Scheme
 import io
 import base64
 import dash_bootstrap_components as dbc
+import sys
+import os
+import flask
+import traceback
+import logging
+import webbrowser
+import threading
 
-# Carousel image filenames
-slide_images = [f"/assets/Slide{i}.jpg" for i in range(1, 25)]
+
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+def resource_path(relative_path): 
+    """ Get absolute path to resource (works for dev and for PyInstaller) """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+def encode_image_to_base64(path):
+    with open(path, 'rb') as f:
+        encoded = base64.b64encode(f.read()).decode()
+    return f"data:image/jpeg;base64,{encoded}"
+
+# Preload all encoded images
+slide_images = [encode_image_to_base64(resource_path(f"assets/Slide{i}.JPG")) for i in range(1, 25)]
+
+
+
+
+
+
+
 
 
 # --------- Data Loading ---------
@@ -53,7 +85,8 @@ def apply_detector_scaling(dff, detectors=2, env_corr=5.89, AZG_factor=0.15):
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
 
 # --------- Load Initial Data ---------
-df = load_data("Data_example.txt")
+df = load_data(resource_path("Data_example.txt"))
+
 
 # --------- Data Cleaning: Remove Jan 2000 rows ---------
 # Handles TimeStamp as either string or datetime
@@ -564,7 +597,7 @@ html.Div([
         html.Hr(),
         dcc.Upload(
             id='upload-data',
-            children=html.Button('Select Different Memory Data Source Text File - not implemented yet - save new file as Data_example.txt for now'),
+            children=html.Button('Select Different Memory Data Source Text File - not implemented yet'),
             accept='.txt,.csv,.tsv,.dat,text/plain',
             multiple=False,
             style={'margin-top': '40px'}
@@ -970,8 +1003,9 @@ def update_carousel(prev_clicks, next_clicks, idx):
     return slide_images[idx], idx
 
 
+def open_browser():
+    webbrowser.open_new("http://127.0.0.1:8050/")
 
-
-# --- Standard Dash main entry point ---
 if __name__ == '__main__':
-    app.run(debug=True)
+    threading.Timer(1.25, open_browser).start()
+    app.run(debug=False, use_reloader=False)
